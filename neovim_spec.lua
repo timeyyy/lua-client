@@ -2,12 +2,12 @@ expose('require uv once to prevent segfault', function()
   require('luv')
 end)
 
-local Nvim = require('nvim')
+local neovim = require('neovim')
 
 describe('nvim client', function()
   local nvim
   setup(function()
-    nvim = Nvim.new_child('nvim', {'--embed', '-u', 'NORC'})
+    nvim = neovim.new_child('nvim', {'--embed', '-u', 'NORC'})
   end)
 
   teardown(function()

@@ -1,4 +1,3 @@
-
 local Host = {}
 Host.__index = Host
 
@@ -72,49 +71,8 @@ local function define(specs, handlers, stype, opts)
   }
 end
 
-function Host.new(nvim)
-  local host = setmetatable({
-    nvim = nvim,
-    plugins = {}
-  }, Host)
-  nvim.handlers = setmetatable({
-    specs = function(scriptfile) return host:get_specs(scriptfile) end,
-  }, {__index = function(_, method) return host:get_handler(method) end})
-  return host
-end
 
-function Host:get_plugin(path)
-  local dir = string.match(path, '.*/')
-  local plugin = self.plugins[dir]
-  if plugin == nil then
-    plugin = Plugin.new(dir, self.nvim)
-    self.plugins[dir] = plugin
-  end
-  return plugin
-end
-
-function Host:get_handler(method)
-  local i = string.find(method, '.lua:', 1, true)
-  if not i then
-    return nil
-  end
-  local path = method:sub(1, i + 3)
-  local _, handlers  = self:get_plugin(path):load_script(path)
-  if handlers == nil then
-    return nil
-  end
-  for m, h in pairs(handlers) do
-    self.nvim.handlers[path .. m] = h
-  end
-  return handlers[method:sub(i + 4)]
-end
-
-function Host:get_specs(path)
-  local specs, _ = self:get_plugin(path):load_script(path)
-  return specs
-end
-
-function Plugin.new(dir, nvim)
+local function new_plugin(dir, nvim)
   local plugin = setmetatable({
     loaded = {},
     dir = dir,
@@ -160,4 +118,56 @@ function Plugin:require(name)
   return m
 end
 
-return Host
+local function new_host(nvim)
+  local host = setmetatable({
+    nvim = nvim,
+    plugins = {}
+  }, Host)
+  nvim.handlers = setmetatable({
+    specs = function(scriptfile) return host:get_specs(scriptfile) end,
+  }, {__index = function(_, method) return host:get_handler(method) end})
+  return host
+end
+
+--function Host.run()
+--  Host.new(Nvim.new_stdio())
+--  uv.run()
+--end
+
+function Host:get_plugin(path)
+  local dir = string.match(path, '.*/')
+  local plugin = self.plugins[dir]
+  if plugin == nil then
+    plugin = new_plugin(dir, self.nvim)
+    self.plugins[dir] = plugin
+  end
+  return plugin
+end
+
+function Host:get_handler(method)
+  local i = string.find(method, '.lua:', 1, true)
+  if not i then
+    return nil
+  end
+  local path = method:sub(1, i + 3)
+  local _, handlers  = self:get_plugin(path):load_script(path)
+  if handlers == nil then
+    return nil
+  end
+  for m, h in pairs(handlers) do
+    self.nvim.handlers[path .. m] = h
+  end
+  return handlers[method:sub(i + 4)]
+end
+
+function Host:get_specs(path)
+  local specs, _ = self:get_plugin(path):load_script(path)
+  return specs
+end
+
+return {
+  new_host = new_host,
+  new_plugin = new_plugin,
+  Host = Host,
+  Plugin = Plugin,
+}
