@@ -5,6 +5,5 @@ luarocks install luv
 luarocks install mpack
 luarocks install busted
 luarocks install luacheck
-luarocks install busted
 luarocks install lua-cjson
 luarocks install inspect
